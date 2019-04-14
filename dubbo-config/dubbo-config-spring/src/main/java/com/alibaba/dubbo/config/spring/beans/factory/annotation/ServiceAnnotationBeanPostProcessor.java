@@ -18,6 +18,8 @@ package com.alibaba.dubbo.config.spring.beans.factory.annotation;
 
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
+import com.alibaba.dubbo.config.MethodConfig;
+import com.alibaba.dubbo.config.annotation.Method;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.alibaba.dubbo.config.spring.ServiceBean;
 import com.alibaba.dubbo.config.spring.context.annotation.DubboClassPathBeanDefinitionScanner;
@@ -57,7 +59,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.alibaba.spring.util.ObjectUtils.of;
+import static com.alibaba.dubbo.config.spring.util.ObjectUtils.of;
 import static org.springframework.beans.factory.support.BeanDefinitionBuilder.rootBeanDefinition;
 import static org.springframework.context.annotation.AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR;
 import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
@@ -262,7 +264,7 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
             registry.registerBeanDefinition(beanName, serviceBeanDefinition);
 
             if (logger.isInfoEnabled()) {
-                logger.warn("The BeanDefinition[" + serviceBeanDefinition +
+                logger.info("The BeanDefinition[" + serviceBeanDefinition +
                         "] of ServiceBean has been registered with name : " + beanName);
             }
 
@@ -289,11 +291,11 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
      */
     private String generateServiceBeanName(Service service, Class<?> interfaceClass, String annotatedServiceBeanName) {
 
-        ServiceBeanNameBuilder builder = ServiceBeanNameBuilder.create(service, interfaceClass, environment);
+        AnnotationBeanNameBuilder builder = AnnotationBeanNameBuilder.create(service, interfaceClass);
 
+        builder.environment(environment);
 
         return builder.build();
-
     }
 
     private Class<?> resolveServiceInterfaceClass(Class<?> annotatedServiceBeanClass, Service service) {
@@ -315,8 +317,9 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
         }
 
         if (interfaceClass == null) {
-
-            Class<?>[] allInterfaces = annotatedServiceBeanClass.getInterfaces();
+            // Find all interfaces from the annotated class
+            // To resolve an issue : https://github.com/apache/incubator-dubbo/issues/3251
+            Class<?>[] allInterfaces = ClassUtils.getAllInterfacesForClass(annotatedServiceBeanClass);
 
             if (allInterfaces.length > 0) {
                 interfaceClass = allInterfaces[0];
@@ -432,6 +435,12 @@ public class ServiceAnnotationBeanPostProcessor implements BeanDefinitionRegistr
 
         if (!protocolRuntimeBeanReferences.isEmpty()) {
             builder.addPropertyValue("protocols", protocolRuntimeBeanReferences);
+        }
+
+        Method[] methods = service.methods();
+        List<MethodConfig> methodConfigs = MethodConfig.constructMethodConfig(methods);
+        if(!methodConfigs.isEmpty()){
+            builder.addPropertyValue("methods", methodConfigs);
         }
 
         return builder.getBeanDefinition();
