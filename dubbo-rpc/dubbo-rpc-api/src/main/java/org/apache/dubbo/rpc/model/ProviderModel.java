@@ -25,6 +25,8 @@ import java.util.Map;
 
 /**
  * ProviderModel which is about published services
+ *
+ * 提供者模型
  */
 public class ProviderModel {
     private final String serviceName;

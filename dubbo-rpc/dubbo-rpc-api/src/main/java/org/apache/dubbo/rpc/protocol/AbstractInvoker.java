@@ -40,6 +40,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 通过ProxyFactory类的getInvoker方法使用ref
+ * 生成一个AbstractProxyInvoker实例
+ * 完成具体服务到Invoker的转化
  * AbstractInvoker.
  */
 public abstract class AbstractInvoker<T> implements Invoker<T> {

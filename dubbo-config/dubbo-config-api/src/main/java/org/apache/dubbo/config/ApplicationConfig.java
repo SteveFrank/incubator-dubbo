@@ -31,6 +31,7 @@ import java.util.Map;
 /**
  * The application info
  *
+ * 应用配置
  * @export
  */
 public class ApplicationConfig extends AbstractConfig {

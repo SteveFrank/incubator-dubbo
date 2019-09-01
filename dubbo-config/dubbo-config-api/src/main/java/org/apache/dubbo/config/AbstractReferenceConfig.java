@@ -35,6 +35,7 @@ public abstract class AbstractReferenceConfig extends AbstractInterfaceConfig {
 
     /**
      * Check if service provider exists, if not exists, it will be fast fail
+     * 如果服务接口不存在，快速失败机制
      */
     protected Boolean check;
 
@@ -55,6 +56,7 @@ public abstract class AbstractReferenceConfig extends AbstractInterfaceConfig {
 
     /**
      * Lazy create connection
+     * 懒加载连接
      */
     protected Boolean lazy = false;
 

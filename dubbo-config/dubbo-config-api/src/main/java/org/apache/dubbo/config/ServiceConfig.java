@@ -66,7 +66,8 @@ import static org.apache.dubbo.common.utils.NetUtils.isInvalidPort;
 
 /**
  * ServiceConfig
- *
+ * Service 注解Config
+ * Service 服务暴露的主过程
  * @export
  */
 public class ServiceConfig<T> extends AbstractServiceConfig {
@@ -86,6 +87,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
      * <p>
      * Actually，when the {@link ExtensionLoader} init the {@link Protocol} instants,it will automatically wraps two
      * layers, and eventually will get a <b>ProtocolFilterWrapper</b> or <b>ProtocolListenerWrapper</b>
+     *
+     * 协议不一样 生成不同的协议
+     *
      */
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
@@ -106,12 +110,20 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private static final ScheduledExecutorService delayExportExecutor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("DubboServiceDelayExporter", true));
 
     /**
-     * The urls of the services exported
+     * 服务配置对应的 Dubbo URL 数组
+     *
+     * 非配置。
      */
     private final List<URL> urls = new ArrayList<URL>();
 
     /**
-     * The exported services
+     * 服务配置暴露的 Exporter
+     * URL ：Exporter 不一定是 1：1 的关系。
+     * 例如  {@link #scope} 未设置时，会暴露 Local + Remote 两个，也就是 URL ：Exporter = 1：2
+     *      {@link #scope} 设置为空时，不会暴露，也就是 URL ：Exporter = 1：0
+     *      {@link #scope} 设置为 Local 或 Remote 任一时，会暴露 Local 或 Remote 一个，也就是 URL ：Exporter = 1：1
+     *
+     * 非配置
      */
     private final List<Exporter<?>> exporters = new ArrayList<Exporter<?>>();
 
@@ -169,6 +181,9 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     }
 
     public ServiceConfig(Service service) {
+        /**
+         * 利用反射获取注解的方法参数，方法名称等信息
+         */
         appendAnnotation(Service.class, service);
         setMethods(MethodConfig.constructMethodConfig(service.methods()));
     }
@@ -276,12 +291,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             throw new IllegalStateException("<dubbo:service interface=\"\" /> interface not allow null!");
         }
 
+        // 是否为范式调用
         if (ref instanceof GenericService) {
             interfaceClass = GenericService.class;
             if (StringUtils.isEmpty(generic)) {
                 generic = Boolean.TRUE.toString();
             }
         } else {
+            // 如果不是范式调用
             try {
                 interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
                         .getContextClassLoader());
@@ -292,8 +309,11 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
             checkRef();
             generic = Boolean.FALSE.toString();
         }
+
+        // 是否为本地调用
         if (local != null) {
             if ("true".equals(local)) {
+                // 在interfaceName上加上local
                 local = interfaceName + "Local";
             }
             Class<?> localClass;
@@ -306,6 +326,8 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
                 throw new IllegalStateException("The local implementation class " + localClass.getName() + " not implement interface " + interfaceName);
             }
         }
+
+        // 本地存根
         if (stub != null) {
             if ("true".equals(stub)) {
                 stub = interfaceName + "Stub";
@@ -421,6 +443,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private void doExportUrlsFor1Protocol(ProtocolConfig protocolConfig, List<URL> registryURLs) {
         String name = protocolConfig.getName();
         if (StringUtils.isEmpty(name)) {
+            // 如果协议为空 默认使用DUBBO
             name = Constants.DUBBO;
         }
 

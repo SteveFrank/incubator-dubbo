@@ -28,6 +28,8 @@ import java.util.List;
 /**
  * The method configuration
  *
+ * 设置 onInvoke onReturn onThrown 等方法
+ *
  * @export
  */
 public class MethodConfig extends AbstractMethodConfig {
